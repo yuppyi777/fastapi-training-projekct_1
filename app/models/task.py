@@ -20,5 +20,5 @@ class Task(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # BUG: Relationship is commented out - students need to uncomment and fix
-    # user = relationship("User", back_populates="tasks")
+    # Relationship to User model
+    user = relationship("User", back_populates="tasks")

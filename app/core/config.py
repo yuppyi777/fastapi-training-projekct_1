@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"  # 未定義の環境変数を無視（docker-compose.yml用の変数など）
 
 
 settings = Settings()
