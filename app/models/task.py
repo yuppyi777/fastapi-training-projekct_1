@@ -21,4 +21,4 @@ class Task(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # BUG: Relationship is commented out - students need to uncomment and fix
-    # user = relationship("User", back_populates="tasks")
+    user = relationship("User", back_populates="tasks")
