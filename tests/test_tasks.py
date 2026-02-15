@@ -1,5 +1,6 @@
 import pytest
 from httpx import AsyncClient
+from app.services.task_service import TaskService
 
 
 async def get_auth_token(client: AsyncClient, user_data: dict) -> str:
@@ -108,3 +109,32 @@ async def test_create_task_without_auth(client: AsyncClient, test_task_data):
     """Test creating a task without authentication"""
     response = await client.post("/api/tasks/", json=test_task_data)
     assert response.status_code == 401
+
+@pytest.mark.asyncio
+async def test_get_completed_tasks_count(client, db_session, test_user_data, test_task_data):
+    """Test counting only completed tasks"""
+    token = await get_auth_token(client, test_user_data)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 3つのタスクを作成
+    create_response = await client.post("/api/tasks/", json=test_task_data, headers=headers)
+    task_id_1 = create_response.json()["id"]
+    create_response = await client.post("/api/tasks/", json=test_task_data, headers=headers)
+    task_id_2 = create_response.json()["id"]
+    create_response = await client.post("/api/tasks/", json=test_task_data, headers=headers)
+    task_id_3 = create_response.json()["id"]
+
+    # 作成したタスクのユーザーIDを取得
+    user_id = create_response.json()["user_id"]
+
+    # 先ほど作成したタスクのうち、2つを完了に更新
+    update_data_1 = {"title": "Updated Task", "is_completed": True}
+    response = await client.put(f"/api/tasks/{task_id_1}", json=update_data_1, headers=headers)
+    update_data_2 = {"title": "Updated Task", "is_completed": True}
+    response = await client.put(f"/api/tasks/{task_id_2}", json=update_data_2, headers=headers)
+
+    # 未完了タスク数を取得
+    completed_count = await TaskService.get_completed_tasks_count(db_session, user_id)
+
+    # 完了タスク数が2であることを確認
+    assert completed_count == 2

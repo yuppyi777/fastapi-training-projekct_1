@@ -68,7 +68,7 @@ class TaskService:
     @staticmethod
     async def get_completed_tasks_count(db: AsyncSession, user_id: int) -> int:
         """Get count of completed tasks for user"""
-        # BUG: This method doesn't filter by is_completed=True
-        result = await db.execute(select(Task).where(Task.user_id == user_id))
+        # 以前は全タスクをカウントしていたバグを修正
+        result = await db.execute(select(Task).where(Task.user_id == user_id, Task.is_completed == True))
         tasks = result.scalars().all()
         return len(tasks)
