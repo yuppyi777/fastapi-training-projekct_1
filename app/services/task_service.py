@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.task import Task
-from app.schemas.task import TaskCreate, TaskUpdate
+from app.schemas.task import TaskCreate, TaskUpdate, TaskStats
 
 
 class TaskService:
@@ -72,3 +72,18 @@ class TaskService:
         result = await db.execute(select(Task).where(Task.user_id == user_id, Task.is_completed == True))
         tasks = result.scalars().all()
         return len(tasks)
+
+    @staticmethod
+    async def get_tasks_count(db: AsyncSession, user_id: int) -> int:
+        """Get total count of tasks for user"""
+        result = await db.execute(select(Task).where(Task.user_id == user_id))
+        tasks = result.scalars().all()
+        return len(tasks)
+
+    @staticmethod
+    async def get_task_statistics(db: AsyncSession, user_id: int) -> TaskStats:
+        """Get task statistics"""
+        total = await TaskService.get_tasks_count(db, user_id)
+        completed = await TaskService.get_completed_tasks_count(db, user_id)
+        pending = total - completed
+        return TaskStats(total=total, completed=completed, pending=pending)

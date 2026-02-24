@@ -138,3 +138,52 @@ async def test_get_completed_tasks_count(client, db_session, test_user_data, tes
 
     # 完了タスク数が2であることを確認
     assert completed_count == 2
+
+@pytest.mark.asyncio
+async def test_task_statistics(client, test_user_data, test_task_data):
+    """Test task statistics endpoint"""
+    token = await get_auth_token(client, test_user_data)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 5つのタスクを作成
+    create_response = await client.post("/api/tasks/", json=test_task_data, headers=headers)
+    task_id_1 = create_response.json()["id"]
+    create_response = await client.post("/api/tasks/", json=test_task_data, headers=headers)
+    task_id_2 = create_response.json()["id"]
+    create_response = await client.post("/api/tasks/", json=test_task_data, headers=headers)
+    task_id_3 = create_response.json()["id"]
+    create_response = await client.post("/api/tasks/", json=test_task_data, headers=headers)
+    task_id_4 = create_response.json()["id"]
+    create_response = await client.post("/api/tasks/", json=test_task_data, headers=headers)
+    task_id_5 = create_response.json()["id"]
+
+    # 先ほど作成したタスクのうち、3つを完了に更新
+    update_data_1 = {"title": "Updated Task", "is_completed": True}
+    response = await client.put(f"/api/tasks/{task_id_1}", json=update_data_1, headers=headers)
+    update_data_2 = {"title": "Updated Task", "is_completed": True}
+    response = await client.put(f"/api/tasks/{task_id_2}", json=update_data_2, headers=headers)
+    update_data_3 = {"title": "Updated Task", "is_completed": True}
+    response = await client.put(f"/api/tasks/{task_id_3}", json=update_data_3, headers=headers)
+
+    # 統計情報を取得
+    response = await client.get("/api/tasks/statistics", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] == 5
+    assert data["completed"] == 3
+    assert data["pending"] == 2
+
+
+@pytest.mark.asyncio
+async def test_task_statistics_empty(client, test_user_data):
+    """Test task statistics endpoint with no tasks"""
+    token = await get_auth_token(client, test_user_data)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # タスクは追加しないで統計情報を取得
+    response = await client.get("/api/tasks/statistics", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] == 0
+    assert data["completed"] == 0
+    assert data["pending"] == 0

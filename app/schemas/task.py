@@ -38,3 +38,10 @@ class TaskResponse(TaskBase):
 
     class Config:
         from_attributes = True
+
+class TaskStats(BaseModel):
+    """Task statistics schema"""
+
+    total: int
+    completed: int
+    pending: int
