@@ -12,12 +12,13 @@ class TaskService:
 
     @staticmethod
     async def get_tasks_by_user(
-        db: AsyncSession, user_id: int, skip: int = 0, limit: int = 100
+        db: AsyncSession, user_id: int, skip: int = 0, limit: int = 100, priority: Optional[int] = None
     ) -> List[Task]:
         """Get all tasks for a user"""
-        result = await db.execute(
-            select(Task).where(Task.user_id == user_id).offset(skip).limit(limit)
-        )
+        query = select(Task).where(Task.user_id == user_id)
+        if priority is not None:
+            query = query.where(Task.priority == priority)
+        result = await db.execute(query.offset(skip).limit(limit))
         return list(result.scalars().all())
 
     @staticmethod

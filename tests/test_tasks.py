@@ -187,3 +187,42 @@ async def test_task_statistics_empty(client, test_user_data):
     assert data["total"] == 0
     assert data["completed"] == 0
     assert data["pending"] == 0
+
+@pytest.mark.asyncio
+async def test_filter_tasks_by_priority(client, test_user_data, test_task_data):
+    """Test filtering tasks by priority"""
+    token = await get_auth_token(client, test_user_data)
+    headers = {"Authorization": f"Bearer {token}"}
+    # 異なる優先度のタスクを作成
+    # Priority 1: 1件
+    create_response = await client.post("/api/tasks/", json=test_task_data, headers=headers)
+    task_id = create_response.json()["id"]
+    update_data = {"title": "Priority1 Task", "priority": 1}
+    response = await client.put(f"/api/tasks/{task_id}", json=update_data, headers=headers)
+
+    # Priority 2: 2件
+    for i in range(2):
+        create_response = await client.post("/api/tasks/", json=test_task_data, headers=headers)
+        task_id = create_response.json()["id"]
+        update_data = {"title": "Priority2 Task", "priority": 2}
+        response = await client.put(f"/api/tasks/{task_id}", json=update_data, headers=headers)
+
+    # Priority 3: 1件
+    create_response = await client.post("/api/tasks/", json=test_task_data, headers=headers)
+    task_id = create_response.json()["id"]
+    update_data = {"title": "Priority3 Task", "priority": 3}
+    response = await client.put(f"/api/tasks/{task_id}", json=update_data, headers=headers)
+
+    # 優先度2でフィルター
+    response = await client.get("/api/tasks/?priority=2", headers=headers)
+    assert response.status_code == 200
+    assert len(response.json()) == 2
+
+@pytest.mark.asyncio
+async def test_filter_tasks_invalid_priority(client, test_user_data):
+    """Test filtering tasks by invalid priority"""
+    token = await get_auth_token(client, test_user_data)
+    headers = {"Authorization": f"Bearer {token}"}
+    # 無効な優先度でフィルター
+    response = await client.get("/api/tasks/?priority=4", headers=headers)
+    assert response.status_code == 422

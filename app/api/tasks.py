@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,9 +18,10 @@ async def get_tasks(
     limit: int = Query(100, ge=1, le=100),
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
+    priority: Optional[int] = Query(None, ge=1, le=3),
 ):
     """Get all tasks for current user"""
-    tasks = await TaskService.get_tasks_by_user(db, current_user.id, skip, limit)
+    tasks = await TaskService.get_tasks_by_user(db, current_user.id, skip, limit, priority)
     return tasks
 
 
