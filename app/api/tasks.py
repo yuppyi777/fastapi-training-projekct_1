@@ -19,9 +19,10 @@ async def get_tasks(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
     priority: Optional[int] = Query(None, ge=1, le=3),
+    search: Optional[str] = Query(None),
 ):
     """Get all tasks for current user"""
-    tasks = await TaskService.get_tasks_by_user(db, current_user.id, skip, limit, priority)
+    tasks = await TaskService.get_tasks_by_user(db, current_user.id, skip, limit, priority, search)
     return tasks
 
 

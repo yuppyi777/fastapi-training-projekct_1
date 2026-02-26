@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.task import Task
@@ -12,12 +12,15 @@ class TaskService:
 
     @staticmethod
     async def get_tasks_by_user(
-        db: AsyncSession, user_id: int, skip: int = 0, limit: int = 100, priority: Optional[int] = None
+        db: AsyncSession, user_id: int, skip: int = 0, limit: int = 100, priority: Optional[int] = None, search: Optional[str] = None
     ) -> List[Task]:
         """Get all tasks for a user"""
         query = select(Task).where(Task.user_id == user_id)
         if priority is not None:
             query = query.where(Task.priority == priority)
+        if search is not None:
+            pattern = f"%{search}%"
+            query = query.where(or_(Task.title.ilike(pattern), Task.description.ilike(pattern)))
         result = await db.execute(query.offset(skip).limit(limit))
         return list(result.scalars().all())
 

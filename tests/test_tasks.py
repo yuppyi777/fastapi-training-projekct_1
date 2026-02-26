@@ -226,3 +226,106 @@ async def test_filter_tasks_invalid_priority(client, test_user_data):
     # 無効な優先度でフィルター
     response = await client.get("/api/tasks/?priority=4", headers=headers)
     assert response.status_code == 422
+
+@pytest.mark.asyncio
+async def test_search_tasks(client, test_user_data, test_task_data):
+    """Test searching tasks"""
+    token = await get_auth_token(client, test_user_data)
+    headers = {"Authorization": f"Bearer {token}"}
+    # 複数のタスクを作成
+    # Title: "Fix bug"
+    create_response = await client.post("/api/tasks/", json=test_task_data, headers=headers)
+    task_id = create_response.json()["id"]
+    update_data = {"title": "Fix bug"}
+    response = await client.put(f"/api/tasks/{task_id}", json=update_data, headers=headers)
+
+    # Title: "Write report", Description: "Bug report"
+    create_response = await client.post("/api/tasks/", json=test_task_data, headers=headers)
+    task_id = create_response.json()["id"]
+    update_data = {"title": "Write report", "description": "Bug report"}
+    response = await client.put(f"/api/tasks/{task_id}", json=update_data, headers=headers)
+
+    # "bug" で検索 → 2件ヒットすることを確認
+    response = await client.get("/api/tasks/?search=bug", headers=headers)
+    assert response.status_code == 200
+    assert len(response.json()) == 2
+
+    # "BUG" で検索 → 2件ヒットすることを確認
+    response = await client.get("/api/tasks/?search=BUG", headers=headers)
+    assert response.status_code == 200
+    assert len(response.json()) == 2
+
+@pytest.mark.asyncio
+async def test_search_tasks_partial_match(client, test_user_data, test_task_data):
+    """Test searching tasks with partial match"""
+    token = await get_auth_token(client, test_user_data)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 複数のタスクを作成
+    # タスク1: タイトルにヒットする想定
+    create_response = await client.post("/api/tasks/", json=test_task_data, headers=headers)
+    task_id = create_response.json()["id"]
+    update_data = {"title": "タスク1 Bug report"}
+    response = await client.put(f"/api/tasks/{task_id}", json=update_data, headers=headers)
+
+    # タスク2: 説明にヒットする想定
+    create_response = await client.post("/api/tasks/", json=test_task_data, headers=headers)
+    task_id = create_response.json()["id"]
+    update_data = {"title": "タスク2", "description": "Bug report in registration"}
+    response = await client.put(f"/api/tasks/{task_id}", json=update_data, headers=headers)
+
+    # タスク3: ヒットしない想定
+    create_response = await client.post("/api/tasks/", json=test_task_data, headers=headers)
+    task_id = create_response.json()["id"]
+    update_data = {"title": "タスク3 Write report", "description": "Write report in registration"}
+    response = await client.put(f"/api/tasks/{task_id}", json=update_data, headers=headers)
+
+    # "bu" で検索 → 2件ヒットすることを確認
+    response = await client.get("/api/tasks/?search=bu", headers=headers)
+    assert response.status_code == 200
+    assert len(response.json()) == 2
+
+@pytest.mark.asyncio
+async def test_combine_priority_and_search(client, test_user_data, test_task_data):
+    """Test combining priority and search"""
+    token = await get_auth_token(client, test_user_data)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # タスク1
+    create_response = await client.post("/api/tasks/", json=test_task_data, headers=headers)
+    task_id = create_response.json()["id"]
+    update_data = {"title": "タスク1 Fix bug", "priority": 1}
+    response = await client.put(f"/api/tasks/{task_id}", json=update_data, headers=headers)
+
+    # タスク2
+    create_response = await client.post("/api/tasks/", json=test_task_data, headers=headers)
+    task_id = create_response.json()["id"]
+    update_data = {"title": "タスク2", "description": "Bug report in registration", "priority": 2}
+    response = await client.put(f"/api/tasks/{task_id}", json=update_data, headers=headers)
+
+    # タスク3
+    create_response = await client.post("/api/tasks/", json=test_task_data, headers=headers)
+    task_id = create_response.json()["id"]
+    update_data = {"title": "タスク3 Write report", "description": "Write report in registration", "priority": 2}
+    response = await client.put(f"/api/tasks/{task_id}", json=update_data, headers=headers)
+
+    # タスク4
+    create_response = await client.post("/api/tasks/", json=test_task_data, headers=headers)
+    task_id = create_response.json()["id"]
+    update_data = {"title": "タスク4 Fix bug", "description": "Fix bug in registration", "priority": 3}
+    response = await client.put(f"/api/tasks/{task_id}", json=update_data, headers=headers)
+
+    # "bug" で検索、優先度2でフィルター → 1件（タスク2）ヒットすることを確認
+    response = await client.get("/api/tasks/?search=bug&priority=2", headers=headers)
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+    # "bug" で検索 → 3件（タスク1, タスク2, タスク4）ヒットすることを確認
+    response = await client.get("/api/tasks/?search=bug", headers=headers)
+    assert response.status_code == 200
+    assert len(response.json()) == 3
+
+    # 優先度2でフィルター → 2件（タスク2, タスク3）ヒットすることを確認
+    response = await client.get("/api/tasks/?priority=2", headers=headers)
+    assert response.status_code == 200
+    assert len(response.json()) == 2
