@@ -38,14 +38,9 @@ async def get_categories(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Get all categories for current user
-
-    TODO: Implement this endpoint
-    - Use CategoryService.get_categories_by_user
-    - Return list of categories
-    """
-    pass
+    """Get all categories for current user"""
+    categories = await CategoryService.get_categories_by_user(db, current_user.id, skip, limit)
+    return categories
 
 
 @router.post("/", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
@@ -54,14 +49,9 @@ async def create_category(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Create new category
-
-    TODO: Implement this endpoint
-    - Use CategoryService.create_category
-    - Return created category
-    """
-    pass
+    """Create new category"""
+    category = await CategoryService.create_category(db, category_data, current_user.id)
+    return category
 
 
 @router.get("/{category_id}", response_model=CategoryResponse)
@@ -70,14 +60,11 @@ async def get_category(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Get category by ID
-
-    TODO: Implement this endpoint
-    - Use CategoryService.get_category_by_id
-    - Return 404 if not found
-    """
-    pass
+    """Get category by ID"""
+    category = await CategoryService.get_category_by_id(db, category_id, current_user.id)
+    if not category:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
+    return category
 
 
 @router.put("/{category_id}", response_model=CategoryResponse)
@@ -87,14 +74,11 @@ async def update_category(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Update category
-
-    TODO: Implement this endpoint
-    - Use CategoryService.update_category
-    - Return 404 if not found
-    """
-    pass
+    """Update category"""
+    category = await CategoryService.update_category(db, category_id, category_data, current_user.id)
+    if not category:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
+    return category
 
 
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -103,14 +87,10 @@ async def delete_category(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Delete category
-
-    TODO: Implement this endpoint
-    - Use CategoryService.delete_category
-    - Return 404 if not found
-    """
-    pass
+    """Delete category"""
+    success = await CategoryService.delete_category(db, category_id, current_user.id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
 
 
 # BONUS TODO: カテゴリに紐づくタスク一覧を取得するエンドポイントを追加
